@@ -2,23 +2,18 @@ using Microsoft.AspNetCore.Mvc;
 using MinhaApi.Data;
 using MinhaApi.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.IO;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MinhaApi.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    [Authorize]
     public class UsersController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -31,7 +26,6 @@ namespace MinhaApi.Controllers
         }
 
         [HttpPost]
-        [AllowAnonymous]
         public async Task<ActionResult<UserCreate>> CreateUser(UserCreate userCreate)
         {
             var user = new User
@@ -152,9 +146,8 @@ namespace MinhaApi.Controllers
             return File(user.Photo, "image/jpeg");
         }
 
-        // Novo endpoint para validação de email e senha
+        // Endpoint para validação de email e senha
         [HttpPost("validate")]
-        [AllowAnonymous]
         public async Task<IActionResult> ValidateUser(LoginRequest loginRequest)
         {
             var user = await _context.Users
@@ -162,25 +155,10 @@ namespace MinhaApi.Controllers
 
             if (user != null)
             {
-                // Geração de token JWT
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"]);
-                var tokenDescriptor = new SecurityTokenDescriptor
-                {
-                    Subject = new ClaimsIdentity(new Claim[]
-                    {
-                        new Claim(ClaimTypes.Name, user.Id.ToString())
-                    }),
-                    Expires = DateTime.UtcNow.AddHours(1),
-                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-                };
-                var token = tokenHandler.CreateToken(tokenDescriptor);
-                var tokenString = tokenHandler.WriteToken(token);
-
-                return Ok(new { Token = tokenString });
+                return Ok(new { message = "Login bem-sucedido" });
             }
 
-            return Unauthorized();
+            return Unauthorized(new { message = "Email ou senha incorretos" });
         }
     }
 }
